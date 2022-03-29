@@ -1,0 +1,76 @@
+K2-296 b
+GJ 1061 d
+K2-296 c
+GJ 1061 c
+GJ 1061 b
+Five erroneus planets
+Some values are normal such as mass radius etc,
+but others are negative, irregular, or straight up copied from each other.
+
+
+Four more erroneus planets
+GJ 687 b
+HD 217850 b
+HD 181234 b
+bet Pic b
+Some values are normal such as mass radius etc,
+but others are negative, irregular, or straight up copied from each other. (S_LOG_G)
+
+
+Kepler-454 c   - Eccentricity is non 0, but periastron and apastron describe its orbit as perfectly circular
+
+
+P_PERIASTRON and P_APASTRON and P_DISTANCE_EFF copy and paste value from P_DISTANCE if they are missing, when they should be nans.
+
+P_ECCENTRICITY sometimes has a value of 0 despite PERIASTRON and APASTRON being different
+
+
+Two of the five erroneus planets have integer overflow
+
+
+P_MASS - Expected: (>0-infinity)
+P_RADIUS -  Expected: (>0-infinity)
+P_GRAVITY -  Expected: (>0-infinity)
+P_DENSITY -  Expected: (>0-infinity)
+P_ESI -  Expected: (>0-infinity)
+P_RADIUS_EST -  Expected: (>0-infinity)     !!!!!!!!!!!!!
+P_MASS_EST -  Expected: (>0-infinity)      !!!!!!!!!!!!!!!!!
+P_SEMI_MAJOR_AXIS_EST -  Expected: (>0-infinity)
+P_ESCAPE -  Expected: (>0-infinity)
+P_POTENTIAL -  Expected: (>0-infinity)
+P_HILL_SPHERE -  Expected: (>0-infinity)
+P_DISTANCE_EFF -  Expected: (>0-infinity)
+P_PERIOD -  Expected: (>0-big number)  !!!!!!!!!!!!!! 7million years orbit       
+P_SEMI_MAJOR_AXIS -  Expected: (>0-infinity)
+P_ECCENTRICITY -  Expected: (>0-<1) !!!!!!!!!!!!!!!!!!!!!
+P_INCLINATION -  Expected: (0-180/360)
+P_OMEGA -  Expected: (0-180/360) !!!!!!!!!!!!!!!!!!!! negative values should be translated unless???
+P_TPERI -  Expected: (>2,000,000-<3,000,000) in reality around 2,400,000 !!!!!!!!!!!!!!!! 0s are erroneus
+P_ANGULAR_DISTANCE -  Expected: (>0-infinity)
+P_IMPACT_PARAMETER -  Expected: (0-1)      !!!!!!!!!!!!!!!!!!!!!!!! one planet negative .6 erroneus
+P_DISTANCE -  Expected: (>0-infinity)
+P_PERIASTRON -  Expected: (>0-infinity)!!!!!!!!!!!!!!!!!!!!!
+P_APASTRON -  Expected: (>0-infinity)!!!!!!!!!!!!!!!!!!!!
+P_FLUX -  Expected: (>0-infinity)
+P_TEMP_EQUIL -  Expected: (>0-infinity)  
+S_TEMPERATURE -  Expected: (>0-infinity) Hottest detected ~100,000K
+S_MASS -  Expected: (>0-infinity)
+S_RADIUS -  Expected: (>0-infinity)
+S_AGE -  Expected: (>0-<13.787) Age of universe is 13.787bnY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Has integer overflow
+S_LOG_G -  Expected: (???) Values range between >1 and <6
+S_RADIUS_EST -  Expected: (>0-infinity)
+S_DISTANCE -  Expected: (>0-infinity)
+S_MAG -  Expected: (>0-infinity)
+S_METALLICITY -  Expected: ()
+S_LUMINOSITY -  Expected: ()
+S_HZ_OPT_MIN -  Expected: ()
+S_HZ_OPT_MAX -  Expected: ()
+S_HZ_CON_MIN -  Expected: ()
+S_HZ_CON_MAX -  Expected: ()
+S_HZ_CON0_MIN -  Expected: ()
+S_HZ_CON0_MAX -  Expected: ()
+S_HZ_CON1_MIN -  Expected: ()
+S_HZ_CON1_MAX -  Expected: ()
+S_SNOW_LINE -  Expected: ()
+S_ABIO_ZONE -  Expected: ()
+S_TIDAL_LOCK -  Expected: ()
