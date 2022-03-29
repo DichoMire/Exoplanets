@@ -75,100 +75,14 @@ def singleNIteration ( df = None) :
 if __name__ == '__main__' :
     pd.set_option('display.max_columns', None)
 
-    strFile = 'phl_exoplanet_catalog_erroneusless.csv'
+    strFile = 'phl_exoplanet_catalog.csv'
 
     print('Loading file: ' + strFile)
 
     dataframe = load_csv_to_df("data/" + strFile)
 
-    #Preprocess data
-    dataframe = preprocessing(dataframe)
+    values = ["K2-296 b", "GJ 1061 d", "K2-296 c", "GJ 1061 c", "GJ 1061 b", "GJ 687 b", "HD 217850 b", "HD 181234 b", "bet Pic b", "HIP 67851 b", "HIP 14810 c", "HD 102117 b", "Kepler-20 d", "WTS-1 b", "Kepler-238 b"]
 
-    #Use file to select columns to work on
-    columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
+    dataframe = dataframe[dataframe.P_NAME.isin(values) == False]
 
-    dataframe = dataframe[columnList]
-
-    print(dataframe.describe())
-
-    #Normalize data
-    prenormalizedDf = dataframe
-    normalizationTuple = normalizeDf(dataframe)
-    dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
-
-    #Begining of K-step process
-
-    #Generate a fullness column
-    dataframe = fullnessGeneration(dataframe)
-
-    #Fullness does not count to column counts
-    #48 or 82
-    #13 columns added during preprocessing
-    #2 columns deleted
-    #59 or 93
-    N = 59
-
-    Ndf = dataframe[dataframe['fullness'] == N]
-    Ndf = Ndf.drop('fullness', axis=1)
-    
-    #Kdf = df[df['fullness'] == N-1] skip
-
-    Kdf = dataframe[dataframe['fullness'] == N-2]
-    Kdf = Kdf.drop('fullness', axis=1)
-
-    #print(sort[["P_TYPE_Terran", "P_TYPE_Neptunian", "P_TYPE_Jovian", "P_TYPE_Superterran", "P_TYPE_Subterran", "P_TYPE_Miniterran"]].head(10))
-
-    lnreg = LinearRegression()
-    imputer = KNNImputer(n_neighbors=2)
-
-    #Get a list of columns that contain at least 1 NaN value
-    listNulls = Kdf.columns[Kdf.isnull().any()].tolist()
-    print(listNulls)
-    
-    """for index in range(len(listNulls)) :
-        nullColumn = listNulls[index]
-        print(nullColumn)"""
-
-    predictedDf = pd.DataFrame()
-    #For each null column
-    for nullColumn in listNulls :
-        tempNulls = listNulls.copy()
-        tempKdf = Kdf
-
-        #Remove it from list and dataframe to be imputed
-        tempNulls.remove(nullColumn)
-        tempKdf = tempKdf.drop(nullColumn, axis=1)
-        
-        #Impute all other values
-        IMPdf = imputer.fit_transform(tempKdf[tempNulls])
-        tempKdf[tempNulls] = IMPdf
-
-        #Fit data and predict the values of the null column
-        reg = lnreg.fit(Ndf.drop(nullColumn, axis = 1, inplace = False),Ndf[nullColumn])
-        predicted = reg.predict(tempKdf)
-        predictedDf[nullColumn] = predicted
-
-    print(predictedDf)
-    columns = predictedDf.columns.tolist()
-    scalar = normalizationTuple[1]
-    tempDf = pd.DataFrame(np.nan, index=range(0, Kdf.shape[0]), columns=prenormalizedDf.columns.tolist())
-    tempDf[predictedDf.columns.tolist()] = predictedDf
-    
-    Kdf = denormalizeDf(Kdf, scalar)
-    predictedDf = denormalizeDf(tempDf, scalar)
-
-    predictedDf = predictedDf[columns]
-
-    print(predictedDf.head(60))
-
-    errorDf = calculateMeanErrorOfFeatures(Kdf[listNulls], predictedDf)
-
-    print(errorDf.head(60))
-
-    columns = errorDf.columns.tolist()
-    for column in columns :
-        print(column + " mean value is: " + str(meanErrorMath(errorDf[column])))
-    #print(listNulls)
-
-
-    #print(df)
+    dataframe.to_csv(path_or_buf="data/phl_exoplanet_catalog_erroneusless.csv", index=False)

@@ -244,6 +244,8 @@
 57  0.057756   1.124589       0.468438  
 58  0.573758   0.705263       0.288360  
 59  0.051020   0.786599       0.140434  
+
+Barebones
 P_ECCENTRICITY mean value is: 0.2793376351962305
 P_OMEGA mean value is: 1308.9349214232684
 P_TPERI mean value is: 4146.023408438855
@@ -253,13 +255,22 @@ S_LOG_G mean value is: 0.27022069744479066
 S_MAG mean value is: 2.394551527545675
 S_METALLICITY mean value is: 0.29903997126340537
 
-
-
+With normalization
 P_ECCENTRICITY mean value is: 0.18691137609774935
 P_OMEGA mean value is: 117.79743276913088
 P_TPERI mean value is: 1724.2060481927667
 P_IMPACT_PARAMETER mean value is: 0.42141728305004145
-S_AGE mean value is: 38650360.17822255
-S_LOG_G mean value is: 0.16354771887059869
+S_AGE mean value is: 38650360.17822255						//Normalization accentuated errors in the original data
+S_LOG_G mean value is: 0.16354771887059869     				//For example integer overflows
 S_MAG mean value is: 3.173597348875111
 S_METALLICITY mean value is: 0.17513218257019847
+
+Simple preprocessing added
+P_ECCENTRICITY mean value is: 0.21327997726685075
+P_OMEGA mean value is: 124.05907960690838
+P_TPERI mean value is: 1838.525634990384
+P_IMPACT_PARAMETER mean value is: 0.3594970091657759
+S_AGE mean value is: 3.469065942351347
+S_LOG_G mean value is: 0.16817851468720835
+S_MAG mean value is: 3.1466904641535702
+S_METALLICITY mean value is: 0.18352186318460922
