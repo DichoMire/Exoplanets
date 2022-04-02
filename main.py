@@ -246,6 +246,9 @@ if __name__ == '__main__' :
             tempStepDataframe = tempStepDataframe.drop(nullColumn, axis=1)
             
             #Impute all other values
+            ###ERROR HERE 
+            #fit_transform cannot impute columns with no values.
+            print(tempStepDataframe[tempNulls])
             IMPdf = imputer.fit_transform(tempStepDataframe[tempNulls])
             tempStepDataframe[tempNulls] = IMPdf
 
