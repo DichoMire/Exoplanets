@@ -1,4 +1,5 @@
-import re, matplotlib.pyplot as plt, pandas as pd, nltk, csv, numpy as np, statistics
+import re, matplotlib.pyplot as plt, pandas as pd, nltk, csv, numpy as np, statistics, sys
+from typing import final
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
@@ -18,15 +19,18 @@ def preprocessing( df = None) :
 
 #Take a Df as input
 #Return a tuple of a rescaled Df between 0 and 1 and the scaler fit to that Df
-def normalizeDf( df = None) :
-    scaler = MinMaxScaler(feature_range=(0,1))
-    rescaledDf = scaler.fit_transform(df)
+def normalizeDf( df = None, scaler = None) :
+    if scaler is None :
+        scaler = MinMaxScaler(feature_range=(0,1))
+        rescaledDf = scaler.fit_transform(df)
+    else : 
+        rescaledDf = scaler.transform(df)
     return (rescaledDf, scaler)
 
-#Take a Df and the scalar used to normalize it as input
+#Take a Df and the scaler used to normalize it as input
 #Return the denormalized Df
-def denormalizeDf ( df = None, scalar = None) :
-    array = scalar.inverse_transform(df)
+def denormalizeDf ( df = None, scaler = None) :
+    array = scaler.inverse_transform(df)
     df = pd.DataFrame(array, columns=df.columns.tolist())
     return df
 
@@ -35,11 +39,11 @@ def denormalizeDf ( df = None, scalar = None) :
 #Negative values in positive fields
 #Wrong format data (Degrees that don't fit into 0-360 range, etc.)
 #Data out of range
-def midIterationProcessing (df = None, scalar = None, columns = None) :
+def midIterationProcessing (df = None, scaler = None, columns = None) :
     positiveReals = open("data/11-Post Temperature - Errorless - PositiveReals.txt").readlines()
     positiveReals = list(map(lambda x: x.strip(), positiveReals))
-    print(positiveReals)
-    df = denormalizeDf(df, scalar)
+
+    df = denormalizeDf(df, scaler)
     for column in columns :
         min = df[column].min()
         if column in positiveReals :
@@ -151,6 +155,13 @@ def fullnessGeneration ( df = None) :
 def singleNIteration ( df = None) :
     return df
 
+def prepStitchDataframe (predictedDataframe = None, finalDataframe = None, nanBoolDataframe = None) :
+    for column in predictedDataframe :
+            for ind in list(predictedDataframe.index.values) :
+                if nanBoolDataframe[column].iloc[ind] == True :
+                    finalDataframe[column].iloc[ind] = predictedDataframe[column].iloc[ind]
+    return finalDataframe
+
 if __name__ == '__main__' :
     pd.set_option('display.max_columns', None)
 
@@ -168,97 +179,125 @@ if __name__ == '__main__' :
 
     dataframe = dataframe[columnList]
 
-    #print(dataframe.describe())
-
     #Normalize data
     prenormalizedDf = dataframe
     normalizationTuple = normalizeDf(dataframe)
     dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
 
+    N = len(dataframe.columns.tolist())
+    K = N
+
+    breakBool = True
+
     #Begining of K-step process
+    while breakBool :
+        #Tool initialization
+        lnreg = LinearRegression()
+        imputer = KNNImputer(n_neighbors=2)
 
-    #Generate a fullness column
-    dataframe = fullnessGeneration(dataframe)
+        #Contains all the rows that are fully filled in
+        #Used to fit and predict missing data
+        fullNDataframe = pd.DataFrame()
 
-    #Fullness does not count to column counts
-    #48 or 82
-    #13 columns added during preprocessing
-    #2 columns deleted
-    #59 or 93
-    N = 59
+        #Contains all the rows that are the most filled but not fully. 
+        #Will be predicted using the full Df
+        stepDataframe = pd.DataFrame()
 
-    Ndf = dataframe[dataframe['fullness'] == N]
-    Ndf = Ndf.drop('fullness', axis=1)
+        #Contains the values that have been predicted by the algorithm
+        #Only the columns that are missing in the current iteration -
+        #Needs to be filled with NaNs if denormalized
+        predictedDataframe = pd.DataFrame()
+
+        #Generate a fullness column
+        dataframe = dataframe.drop('fullness', axis=1, errors='ignore')
+        dataframe = fullnessGeneration(dataframe)
+
+        #Generate the N-Df
+        fullNDataframe = dataframe[dataframe['fullness'] == N]
+        fullNDataframe = fullNDataframe.drop('fullness', axis=1)
     
-    #Kdf = df[df['fullness'] == N-1] skip
+        while True :
+            K-=1
+            #Generate the K-Df
+            stepDataframe = dataframe[dataframe['fullness'] == K]
+            if len(stepDataframe.index) > 0 :
+                break
+            elif K < 0 :
+                #We've cleared the whole DB of Nans. Exit the outer-for-loop
+                breakBool = False
+            else :
+                continue
+        #Clean K-Df for later prediction
+        stepDataframe = stepDataframe.drop('fullness', axis=1)
 
-    Kdf = dataframe[dataframe['fullness'] == N-2]
-    Kdf = Kdf.drop('fullness', axis=1)
+        #Get a list of columns that contain at least 1 NaN value
+        listNulls = stepDataframe.columns[stepDataframe.isnull().any()].tolist()
+        print("Iteration K = " + str(N-K))
+        print("List of Null columns:")
+        print(listNulls)
 
-    #print(sort[["P_TYPE_Terran", "P_TYPE_Neptunian", "P_TYPE_Jovian", "P_TYPE_Superterran", "P_TYPE_Subterran", "P_TYPE_Miniterran"]].head(10))
+        #For each null column
+        for nullColumn in listNulls :
+            tempNulls = listNulls.copy()
+            tempStepDataframe = stepDataframe
 
-    lnreg = LinearRegression()
-    imputer = KNNImputer(n_neighbors=2)
+            #Remove it from list and dataframe to be imputed
+            tempNulls.remove(nullColumn)
+            tempStepDataframe = tempStepDataframe.drop(nullColumn, axis=1)
+            
+            #Impute all other values
+            IMPdf = imputer.fit_transform(tempStepDataframe[tempNulls])
+            tempStepDataframe[tempNulls] = IMPdf
 
-    #Get a list of columns that contain at least 1 NaN value
-    listNulls = Kdf.columns[Kdf.isnull().any()].tolist()
-    print(listNulls)
-    
-    """for index in range(len(listNulls)) :
-        nullColumn = listNulls[index]
-        print(nullColumn)"""
+            #Fit data and predict the values of the null column
+            reg = lnreg.fit(fullNDataframe.drop(nullColumn, axis = 1, inplace = False),fullNDataframe[nullColumn])
+            predictedArr = reg.predict(tempStepDataframe)
+            predictedDataframe[nullColumn] = predictedArr
 
-    predictedDf = pd.DataFrame()
-    #For each null column
-    for nullColumn in listNulls :
-        tempNulls = listNulls.copy()
-        tempKdf = Kdf
-
-        #Remove it from list and dataframe to be imputed
-        tempNulls.remove(nullColumn)
-        tempKdf = tempKdf.drop(nullColumn, axis=1)
+        #Prepare variables for denormalization
+        columns = predictedDataframe.columns.tolist()
+        scaler = normalizationTuple[1]
+        tempStepDataframe = pd.DataFrame(np.nan, index=range(0, stepDataframe.shape[0]), columns=prenormalizedDf.columns.tolist())
+        tempStepDataframe[predictedDataframe.columns.tolist()] = predictedDataframe
         
-        #Impute all other values
-        IMPdf = imputer.fit_transform(tempKdf[tempNulls])
-        tempKdf[tempNulls] = IMPdf
+        #Dataframe to stitch old and new values together
+        nanBoolDataframe = stepDataframe.isna()
+        finalDataframe = stepDataframe
+        #==End
 
-        #Fit data and predict the values of the null column
-        reg = lnreg.fit(Ndf.drop(nullColumn, axis = 1, inplace = False),Ndf[nullColumn])
-        predicted = reg.predict(tempKdf)
-        predictedDf[nullColumn] = predicted
+        #Denormalize the K-Df
+        #
+        #
+        #
+        stepDataframe = denormalizeDf(stepDataframe, scaler)
 
-    predictedDf["S_MAG"].iloc[1] = -1
-    print(predictedDf)
-    print("================")
+        #Mid-processing to remove any erroneus information
+        #Function Denormalizes the predictedDataframe
+        predictedDataframe = midIterationProcessing(tempStepDataframe, scaler, columns)
+        predictedDataframe = predictedDataframe[columns]
 
-    columns = predictedDf.columns.tolist()
-    scalar = normalizationTuple[1]
-    tempDf = pd.DataFrame(np.nan, index=range(0, Kdf.shape[0]), columns=prenormalizedDf.columns.tolist())
-    tempDf[predictedDf.columns.tolist()] = predictedDf
-    
-    Kdf = denormalizeDf(Kdf, scalar)
-    predictedDf = midIterationProcessing(tempDf, scalar, columns)
+        #Calculate error
+        errorDf = calculateMeanErrorOfFeatures(stepDataframe[listNulls], predictedDataframe)
 
-    print(predictedDf["S_MAG"].head(60))
-
-    #predictedDf = denormalizeDf(tempDf, scalar)
-
-    predictedDf = predictedDf[columns]
-
-    
-
-    
-
-    #print(predictedDf.head(60))
-
-    errorDf = calculateMeanErrorOfFeatures(Kdf[listNulls], predictedDf)
-
-    print(errorDf.head(60))
-
-    columns = errorDf.columns.tolist()
-    for column in columns :
-        print(column + " mean value is: " + str(meanErrorMath(errorDf[column])))
-    #print(listNulls)
+        #Output information
+        columns = errorDf.columns.tolist()
+        for column in columns :
+            print(column + " mean value is: " + str(meanErrorMath(errorDf[column])))
 
 
-    #print(df)
+        #Normalize the predictedDataframe to fit with the original Dataframe
+        predictedDataframe = normalizeDf(predictedDataframe.reindex(columns=dataframe.drop('fullness', axis=1).columns.tolist()), scaler)
+        predictedDataframe = np.transpose(predictedDataframe[0])
+        #print(np.isfinite(predictedDataframe[0]))
+        predictedDataframe = [col for col in predictedDataframe if np.isfinite(col).any()]
+        predictedDataframe = pd.DataFrame(np.transpose(predictedDataframe), columns=columns)
+        #
+        #
+        #
+        #===End of Mid-processing
+
+        #Prepare the stitched Df that contains the predicted values
+        dfToStich = prepStitchDataframe(predictedDataframe, finalDataframe, nanBoolDataframe)
+
+        dataframe = dataframe.merge(right=dfToStich, how='left')
+        #print(df)
