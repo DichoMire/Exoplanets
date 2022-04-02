@@ -3,7 +3,7 @@ from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
-from torch import norm
+from torch import norm, positive
 
 #Open a filename and return a Dataframe
 def load_csv_to_df( filename = None ) :  
@@ -23,10 +23,89 @@ def normalizeDf( df = None) :
     rescaledDf = scaler.fit_transform(df)
     return (rescaledDf, scaler)
 
+#Take a Df and the scalar used to normalize it as input
+#Return the denormalized Df
 def denormalizeDf ( df = None, scalar = None) :
     array = scalar.inverse_transform(df)
     df = pd.DataFrame(array, columns=df.columns.tolist())
     return df
+
+#Function that processes data after its prediction
+#Cleans erroneus data such as:
+#Negative values in positive fields
+#Wrong format data (Degrees that don't fit into 0-360 range, etc.)
+#Data out of range
+def midIterationProcessing (df = None, scalar = None, columns = None) :
+    positiveReals = open("data/11-Post Temperature - Errorless - PositiveReals.txt").readlines()
+    positiveReals = list(map(lambda x: x.strip(), positiveReals))
+    print(positiveReals)
+    df = denormalizeDf(df, scalar)
+    for column in columns :
+        min = df[column].min()
+        if column in positiveReals :
+            df[column] = df[column].apply(lambda x: nonZeroToInfinity(x, min=min, up = 0.001, down = 0.0001))  #0.0001
+        elif column in ["P_INCLINATION", "P_OMEGA", "P_IMPACT_PARAMETER" "S_LOG"] :
+            df[column] = df[column].apply(lambda x: nonNegativeDownLimit(x, min=min, up = 0.001, down = 0.0001))
+        
+        max = df[column].max()
+        if column == "P_ECCENTRICITY" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 0.999))
+        elif column == "P_INCLINATION" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 180))
+        elif column == "P_IMPACT_PARAMETER" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 1))
+        elif column == "S_AGE" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.1, down = 0.001, measure = 13.787))
+
+
+    return df
+
+#Function that transforms negative data into positive non-zero data
+#X is input, min is the lowest value in the data, up is the most away from 0 a data can be, down is the closest
+#Such that there is a slight weight added
+def nonZeroToInfinity ( x, min, up, down) :
+    if( x <= 0 ) :
+        if min >= 0 :
+            return up
+        else :
+            val = up - ((abs(x)/abs(min)) * (up * 0.9))
+            if val < down :
+                return down
+            else : 
+                return val
+    else :
+        return x
+
+#Function that transforms negative date into non-negative data (incl. zero)
+#Such that there is a sligth weight added
+def nonNegativeDownLimit ( x, min, up, down) :
+    if( x <= 0 ) :
+        if min >= 0 :
+            return up
+        else :
+            val = up - ((abs(x)/abs(min)) * up)
+            if val < down :
+                return down
+            else : 
+                return val
+    else :
+        return x
+
+#Function that transforms data above an upper limit called measure into data below it
+#x is the input. Max is highest valued data, up is furthest away from measure, 
+#Such that there is a slight weight added
+def fulfilUpperLimit ( x, max, up, down, measure) :
+    if( x > measure ) :
+        if max <= measure :
+            return measure - up
+        else :
+            val = measure - (up - (((x-measure)/(max-measure)) * up))
+            if val > (measure - down) :
+                return measure - down
+            else : 
+                return val
+    else :
+        return x
 
 #Return a list of all features
 def selectColumnsFromFile( filename = None) :
@@ -89,7 +168,7 @@ if __name__ == '__main__' :
 
     dataframe = dataframe[columnList]
 
-    print(dataframe.describe())
+    #print(dataframe.describe())
 
     #Normalize data
     prenormalizedDf = dataframe
@@ -148,18 +227,29 @@ if __name__ == '__main__' :
         predicted = reg.predict(tempKdf)
         predictedDf[nullColumn] = predicted
 
+    predictedDf["S_MAG"].iloc[1] = -1
     print(predictedDf)
+    print("================")
+
     columns = predictedDf.columns.tolist()
     scalar = normalizationTuple[1]
     tempDf = pd.DataFrame(np.nan, index=range(0, Kdf.shape[0]), columns=prenormalizedDf.columns.tolist())
     tempDf[predictedDf.columns.tolist()] = predictedDf
     
     Kdf = denormalizeDf(Kdf, scalar)
-    predictedDf = denormalizeDf(tempDf, scalar)
+    predictedDf = midIterationProcessing(tempDf, scalar, columns)
+
+    print(predictedDf["S_MAG"].head(60))
+
+    #predictedDf = denormalizeDf(tempDf, scalar)
 
     predictedDf = predictedDf[columns]
 
-    print(predictedDf.head(60))
+    
+
+    
+
+    #print(predictedDf.head(60))
 
     errorDf = calculateMeanErrorOfFeatures(Kdf[listNulls], predictedDf)
 

@@ -81,7 +81,7 @@ if __name__ == '__main__' :
 
     dataframe = load_csv_to_df("data/" + strFile)
 
-    values = ["K2-296 b", "GJ 1061 d", "K2-296 c", "GJ 1061 c", "GJ 1061 b", "GJ 687 b", "HD 217850 b", "HD 181234 b", "bet Pic b", "HIP 67851 b", "HIP 14810 c", "HD 102117 b", "Kepler-20 d", "WTS-1 b", "Kepler-238 b"]
+    values = ["K2-296 b", "GJ 1061 d", "K2-296 c", "GJ 1061 c", "GJ 1061 b", "GJ 687 b", "HD 217850 b", "HD 181234 b", "bet Pic b", "HIP 67851 b", "HIP 14810 c", "HD 102117 b", "Kepler-20 d", "WTS-1 b", "Kepler-238 b", "HAT-P-70 b"]
 
     dataframe = dataframe[dataframe.P_NAME.isin(values) == False]
 

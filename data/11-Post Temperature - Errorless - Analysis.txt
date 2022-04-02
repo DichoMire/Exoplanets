@@ -17,6 +17,16 @@ Some values are normal such as mass radius etc,
 but others are negative, irregular, or straight up copied from each other. (S_LOG_G)
 
 
+Six more erroneus planets
+HIP 67851 b
+HIP 14810 c
+HD 102117 b
+Kepler-20 d
+WTS-1 b
+Kepler-238 b
+
+
+
 Kepler-454 c   - Eccentricity is non 0, but periastron and apastron describe its orbit as perfectly circular
 
 
@@ -61,16 +71,16 @@ S_LOG_G -  Expected: (???) Values range between >1 and <6
 S_RADIUS_EST -  Expected: (>0-infinity)
 S_DISTANCE -  Expected: (>0-infinity)
 S_MAG -  Expected: (>0-infinity)
-S_METALLICITY -  Expected: ()
-S_LUMINOSITY -  Expected: ()
-S_HZ_OPT_MIN -  Expected: ()
-S_HZ_OPT_MAX -  Expected: ()
-S_HZ_CON_MIN -  Expected: ()
-S_HZ_CON_MAX -  Expected: ()
-S_HZ_CON0_MIN -  Expected: ()
-S_HZ_CON0_MAX -  Expected: ()
-S_HZ_CON1_MIN -  Expected: ()
-S_HZ_CON1_MAX -  Expected: ()
-S_SNOW_LINE -  Expected: ()
-S_ABIO_ZONE -  Expected: ()
-S_TIDAL_LOCK -  Expected: ()
+S_METALLICITY -  Expected: (-R to +R) Star metallicity is calculated by log(10) compared to sun so negative values are possible
+S_LUMINOSITY -  Expected: (>0-infinity)
+S_HZ_OPT_MIN -  Expected: (>0-infinity)
+S_HZ_OPT_MAX -  Expected: (>0-infinity)
+S_HZ_CON_MIN -  Expected: (>0-infinity)
+S_HZ_CON_MAX -  Expected: (>0-infinity)
+S_HZ_CON0_MIN -  Expected: (>0-infinity)
+S_HZ_CON0_MAX -  Expected: (>0-infinity)
+S_HZ_CON1_MIN -  Expected: (>0-infinity)
+S_HZ_CON1_MAX -  Expected: (>0-infinity)
+S_SNOW_LINE -  Expected: (>0-infinity)
+S_ABIO_ZONE -  Expected: (>0-infinity)
+S_TIDAL_LOCK -  Expected: (>0-infinity)

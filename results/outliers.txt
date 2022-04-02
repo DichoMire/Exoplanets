@@ -1,0 +1,8 @@
+P_ECCENTRICITY -  Expected: (>0-<1) !!!!!!!!!!!!!!!!!!!!!
+P_INCLINATION -  Expected: (0-180/360)
+P_OMEGA -  Expected: (0-180/360) !!!!!!!!!!!!!!!!!!!! negative values should be translated unless???
+P_TPERI -  Expected: (>2,000,000-<3,000,000) in reality around 2,400,000 !!!!!!!!!!!!!!!! 0s are erroneus
+DONE=P_IMPACT_PARAMETER -  Expected: (0-1)      !!!!!!!!!!!!!!!!!!!!!!!! one planet negative .6 erroneus
+S_AGE -  Expected: (>0-<13.787) Age of universe is 13.787bnY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Has integer overflow
+S_LOG_G -  Expected: (???) Values range between >1 and <6
+S_METALLICITY -  Expected: (-R to +R) Star metallicity is calculated by log(10) compared to sun so negative values are possible

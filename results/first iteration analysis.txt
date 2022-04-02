@@ -274,3 +274,13 @@ S_AGE mean value is: 3.469065942351347
 S_LOG_G mean value is: 0.16817851468720835
 S_MAG mean value is: 3.1466904641535702
 S_METALLICITY mean value is: 0.18352186318460922
+
+Mid-Processing to remove errors in the middle of the INK process.
+P_ECCENTRICITY mean value is: 0.21149478816346098
+P_OMEGA mean value is: 107.81743411130317					//Proof of concept that some preprocessing might be beneficial
+P_TPERI mean value is: 1760.5515827334796
+P_IMPACT_PARAMETER mean value is: 0.35098142893614476
+S_AGE mean value is: 3.425370856829875
+S_LOG_G mean value is: 0.17355171606228637
+S_MAG mean value is: 3.3331738205673775						//Curious as to why this is happening though
+S_METALLICITY mean value is: 0.17983390267931496
