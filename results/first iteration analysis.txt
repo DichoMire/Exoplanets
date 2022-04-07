@@ -284,3 +284,9 @@ S_AGE mean value is: 3.425370856829875
 S_LOG_G mean value is: 0.17355171606228637
 S_MAG mean value is: 3.3331738205673775						//Curious as to why this is happening though
 S_METALLICITY mean value is: 0.17983390267931496
+
+First iteration on a working N-k step
+P_OMEGA mean value is: 118.25888951791987
+P_TPERI mean value is: 1379.8258065368514
+S_AGE mean value is: 3.821558168786431
+S_MAG mean value is: 4.187422377994507
