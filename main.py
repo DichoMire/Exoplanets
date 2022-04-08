@@ -145,7 +145,10 @@ def calculateMeanErrorOfFeatures( actualDf = None, predictedDf = None) :
 #Return mean error of a list, ignoring cells with -1
 def meanErrorMath( list = None ) :
     list = [i for i in list if i != -1]
-    return statistics.mean(list)
+    if(len(list) == 0) :
+        return np.nan
+    else :
+        return statistics.mean(list)
 
 #Return a new feature that evaluates from 0 to 1 the fullness of a row
 def fullnessGeneration ( df = None) :
@@ -187,10 +190,10 @@ if __name__ == '__main__' :
     N = len(dataframe.columns.tolist())
     K = N
 
-    breakBool = True
+    breakBool = False
 
-    #Begining of K-step process
-    while breakBool :
+    #Begining of N-step process
+    while True :
         #Tool initialization
         lnreg = LinearRegression()
         imputer = KNNImputer(n_neighbors=2)
@@ -216,6 +219,7 @@ if __name__ == '__main__' :
         fullNDataframe = dataframe[dataframe['fullness'] == N]
         fullNDataframe = fullNDataframe.drop('fullness', axis=1)
     
+        #Begining of the K-step process
         while True :
             K-=1
             #Generate the K-Df
@@ -224,9 +228,14 @@ if __name__ == '__main__' :
                 break
             elif K < 0 :
                 #We've cleared the whole DB of Nans. Exit the outer-for-loop
-                breakBool = False
+                breakBool = True
+                break
             else :
                 continue
+
+        if breakBool == True :
+            break
+
         #Clean K-Df for later prediction
         stepDataframe = stepDataframe.drop('fullness', axis=1)
 
@@ -236,21 +245,26 @@ if __name__ == '__main__' :
         print("List of Null columns:")
         print(listNulls)
 
+        imputationBasisDataframe = stepDataframe.append(fullNDataframe)
+
         #For each null column
         for nullColumn in listNulls :
             tempNulls = listNulls.copy()
             tempStepDataframe = stepDataframe
 
-            #Remove it from list and dataframe to be imputed
+            #Use the N-full Dataframe and the K-full dataframe to
+            #Impute the missing data in the K-Dataframe
+            imputationDataframe = imputationBasisDataframe
+            #Remove the column to be predicted in the current iteration
             tempNulls.remove(nullColumn)
-            tempStepDataframe = tempStepDataframe.drop(nullColumn, axis=1)
+            imputationDataframe = imputationDataframe.drop(nullColumn, axis=1)
             
             #Impute all other values
-            ###ERROR HERE 
-            #fit_transform cannot impute columns with no values.
-            print(tempStepDataframe[tempNulls])
-            IMPdf = imputer.fit_transform(tempStepDataframe[tempNulls])
-            tempStepDataframe[tempNulls] = IMPdf
+            IMPdf = imputer.fit_transform(imputationDataframe)
+            imputationDataframe[:] = IMPdf
+            #Remove the N-full entries to work only on the K-dataframe
+            tempStepDataframe = imputationDataframe.drop(fullNDataframe.index, axis=0)
+
 
             #Fit data and predict the values of the null column
             reg = lnreg.fit(fullNDataframe.drop(nullColumn, axis = 1, inplace = False),fullNDataframe[nullColumn])
@@ -300,7 +314,16 @@ if __name__ == '__main__' :
         #===End of Mid-processing
 
         #Prepare the stitched Df that contains the predicted values
-        dfToStich = prepStitchDataframe(predictedDataframe, finalDataframe, nanBoolDataframe)
+        columns = predictedDataframe.columns.tolist()
+        indexes = finalDataframe.index.values.tolist()
+        stitchedDf = dataframe[columns].iloc[indexes]
 
-        dataframe = dataframe.merge(right=dfToStich, how='left')
-        #print(df)
+        for column in columns :
+            stitchedDf[column] = np.where(stitchedDf[column].isnull(), predictedDataframe[column], stitchedDf[column])
+
+        dataframe.loc[indexes, columns] = stitchedDf
+
+    print("finished...")
+    dataframe = denormalizeDf(dataframe.drop('fullness', axis=1, errors='ignore'), scaler)
+    print(dataframe)
+    dataframe.to_csv("data/finalRes.csv", index=False)
