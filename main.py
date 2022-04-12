@@ -1,4 +1,5 @@
 import re, matplotlib.pyplot as plt, pandas as pd, nltk, csv, numpy as np, statistics, sys
+from os.path import exists
 from typing import final
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
@@ -69,21 +70,19 @@ def postAlgorithmProcessing(df = None, scaler = None) :
     positiveReals = list(map(lambda x: x.strip(), positiveReals))
 
     for column in df.columns.tolist() :
-        min = df[column].min()
         if column in positiveReals :
-            df[column] = df[column].apply(lambda x: nonZeroToInfinity(x, min=min, up = 0.001, down = 0.0001))  #0.0001
+            df[column] = df[column].apply(lambda x: x if x > 0 else np.nan)
         elif column in ["P_INCLINATION", "P_OMEGA", "P_IMPACT_PARAMETER" "S_LOG"] :
-            df[column] = df[column].apply(lambda x: nonNegativeDownLimit(x, min=min, up = 0.001, down = 0.0001))
-        
-        max = df[column].max()
+            df[column] = df[column].apply(lambda x: x if x >= 0 else np.nan)
+
         if column == "P_ECCENTRICITY" :
-            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 0.999))
+            df[column] = df[column].apply(lambda x: x if x < 1 else np.nan)
         elif column == "P_INCLINATION" :
-            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 180))
+            df[column] = df[column].apply(lambda x: x if x <= 180 else np.nan)
         elif column == "P_IMPACT_PARAMETER" :
-            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 1))
+            df[column] = df[column].apply(lambda x: x if x < 1 else np.nan)
         elif column == "S_AGE" :
-            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.1, down = 0.001, measure = 13.787))
+            df[column] = df[column].apply(lambda x: x if x < 14 else np.nan)
 
     return df
 
@@ -206,7 +205,7 @@ def deDummifyDf ( dataframe = None) :
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
 
-def inkAlgorithm (dataframe = None) :
+def inkAlgorithm (dataframe = None, notLastIter = True) :
     #Create a DF for error info collection
     columns = dataframe.columns.tolist()
     resColumns = []
@@ -272,8 +271,8 @@ def inkAlgorithm (dataframe = None) :
         #Get a list of columns that contain at least 1 NaN value
         listNulls = stepDataframe.columns[stepDataframe.isnull().any()].tolist()
         print("Iteration K = " + str(N-K))
-        print("List of Null columns:")
-        print(listNulls)
+        #print("List of Null columns:")
+        print("Missing columns count: " + str(len(listNulls)))
 
         imputationBasisDataframe = stepDataframe.append(fullNDataframe)
 
@@ -338,7 +337,7 @@ def inkAlgorithm (dataframe = None) :
             res = str(meanErrorMath(errorDf[column]))
             if (res is not np.nan) and (res != "nan")  :
                 inputDict[column] = res
-                print(column + " mean value is: " + inputDict[column])
+                #print(column + " mean value is: " + inputDict[column])
                 inputDict[column + "_Weight"] = sampleCount - errorDf[column].value_counts()[-1]
 
         errorResults = errorResults.append(inputDict, ignore_index=True)
@@ -367,16 +366,17 @@ def inkAlgorithm (dataframe = None) :
 
     print("finished...")
     dataframe = denormalizeDf(dataframe.drop('fullness', axis=1, errors='ignore'), scaler)
-    dataframe = postAlgorithmProcessing(dataframe, scaler)
+    if notLastIter == True :
+        dataframe = postAlgorithmProcessing(dataframe, scaler)
     dataframe = deDummifyDf(dataframe)
 
-    print("Final Errors:")
+    #print("Final Errors:")
     weightColumns = [col for col in errorResults.columns if '_Weight' in col]
     columns = [x for x in errorResults.columns.tolist() if x not in weightColumns]
     columns.remove("Iteration")
     columns.remove("Sample Count")
 
-    print(errorResults)
+    #print(errorResults)
 
     for column in columns :
         sum = 0
@@ -395,8 +395,13 @@ def inkAlgorithm (dataframe = None) :
     #allColumns.remove("S_TYPE_TEMP")
     #errorDf = calculateMeanErrorOfFeatures(prenormalizedDf[allColumns], dataframe[allColumns])
 
-    dataframe.to_csv("data/finalRes.csv", index=False)
-    return 0
+    
+    for i in range(1,100000) :
+        if not exists("data/finalRes" + str(i) + ".csv") :
+            dataframe.to_csv("data/finalRes" + str(i) + ".csv", index=False)
+            break
+
+    return dataframe
 
 if __name__ == '__main__' :
     pd.set_option('display.max_columns', None)
@@ -407,18 +412,28 @@ if __name__ == '__main__' :
 
     dataframe = load_csv_to_df("data/" + strFile)
 
-    #Preprocess data
-    dataframe = preprocessing(dataframe)
+    print(dataframe.isna().mean().round(4).mean())
 
     #Use file to select columns to work on
     columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
 
-    dataframe = dataframe[columnList]
+    while(True) :
+        #Preprocess data
+        dataframe = preprocessing(dataframe)
 
-    #Normalize data
-    prenormalizedDf = dataframe
-    normalizationTuple = normalizeDf(dataframe)
-    dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+        dataframe = dataframe[columnList]
 
-    inkAlgorithm(dataframe)
+        #Normalize data
+        prenormalizedDf = dataframe
+        normalizationTuple = normalizeDf(dataframe)
+        dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+        
+        dataframe = inkAlgorithm(dataframe, True)
+        fullnessIndex = dataframe.isna().mean().round(4).mean()
+        print(fullnessIndex)
+        if(fullnessIndex < 0.001) :
+            dataframe = inkAlgorithm(dataframe, False)
+            break
+
+    print(dataframe.isna().mean().round(4).mean())
 
