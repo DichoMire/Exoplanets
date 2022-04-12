@@ -165,6 +165,27 @@ def prepStitchDataframe (predictedDataframe = None, finalDataframe = None, nanBo
                     finalDataframe[column].iloc[ind] = predictedDataframe[column].iloc[ind]
     return finalDataframe
 
+def deDummifyDf ( dataframe = None) :
+    pTypes = dataframe.filter(like="P_TYPE").columns
+
+    seriesPType = dataframe[pTypes].idxmax(axis=1).apply(lambda x: x.split("_")[2])
+    dataframe = dataframe.drop(pTypes, axis=1, errors='ignore')
+    dataframe["P_TYPE"] = seriesPType
+
+    sTempTypes = dataframe.filter(like="S_TYPE_TEMP").columns
+
+    seriesSTempType = dataframe[sTempTypes].idxmax(axis=1).apply(lambda x: x.split("_")[3])
+    dataframe = dataframe.drop(sTempTypes, axis=1, errors='ignore')
+    dataframe["S_TYPE_TEMP"] = seriesSTempType
+
+    return dataframe
+
+    #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
+    #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
+
+def inkAlgorithm () :
+    return 0
+
 if __name__ == '__main__' :
     pd.set_option('display.max_columns', None)
 
@@ -186,6 +207,16 @@ if __name__ == '__main__' :
     prenormalizedDf = dataframe
     normalizationTuple = normalizeDf(dataframe)
     dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+
+    #Create a DF for error info collection
+    columns = dataframe.columns.tolist()
+    resColumns = []
+    for column in columns :
+        resColumns.append(column)
+        resColumns.append(column + "_Weight")
+    resColumns.insert(0, "Iteration")
+    resColumns.insert(1, "Sample Count")
+    errorResults = pd.DataFrame(columns=resColumns)
 
     N = len(dataframe.columns.tolist())
     K = N
@@ -289,17 +320,29 @@ if __name__ == '__main__' :
         stepDataframe = denormalizeDf(stepDataframe, scaler)
 
         #Mid-processing to remove any erroneus information
-        #Function Denormalizes the predictedDataframe
-        predictedDataframe = midIterationProcessing(tempStepDataframe, scaler, columns)
-        predictedDataframe = predictedDataframe[columns]
+        #Function Denormalizes the predictedDataframe     !@!!!!!!!!!!!!! removed
+        #predictedDataframe = midIterationProcessing(tempStepDataframe, scaler, columns)
+        #predictedDataframe = predictedDataframe[columns]
 
         #Calculate error
         errorDf = calculateMeanErrorOfFeatures(stepDataframe[listNulls], predictedDataframe)
 
+        #Append error data to ErrorResult Df
+        sampleCount = len(errorDf.index)
+        inputDict = {"Iteration" : K, "Sample Count" : sampleCount}
+
         #Output information
         columns = errorDf.columns.tolist()
         for column in columns :
-            print(column + " mean value is: " + str(meanErrorMath(errorDf[column])))
+            if K == 43 and column == "P_MASS" :
+                stop = True
+            res = str(meanErrorMath(errorDf[column]))
+            if (res is not np.nan) and (res != "nan")  :
+                inputDict[column] = res
+                print(column + " mean value is: " + inputDict[column])
+                inputDict[column + "_Weight"] = sampleCount - errorDf[column].value_counts()[-1]
+
+        errorResults = errorResults.append(inputDict, ignore_index=True)
 
 
         #Normalize the predictedDataframe to fit with the original Dataframe
@@ -325,5 +368,31 @@ if __name__ == '__main__' :
 
     print("finished...")
     dataframe = denormalizeDf(dataframe.drop('fullness', axis=1, errors='ignore'), scaler)
-    print(dataframe)
+    dataframe = deDummifyDf(dataframe)
+
+    print("Final Errors:")
+    weightColumns = [col for col in errorResults.columns if '_Weight' in col]
+    columns = [x for x in errorResults.columns.tolist() if x not in weightColumns]
+    columns.remove("Iteration")
+    columns.remove("Sample Count")
+
+    print(errorResults)
+
+    for column in columns :
+        sum = 0
+        count = 0
+        for index in range(0, len(errorResults.index)) :
+            if errorResults[column].iloc[index] is not (np.nan or "nan"):
+                res = float(errorResults[column].iloc[index]) * float(errorResults[column + "_Weight"].iloc[index])
+                sum += res
+                count += errorResults[column + "_Weight"].iloc[index]
+        if count != 0 :
+            print("Mean Final Error of: " + column + " = " + str(sum/count))
+        else :
+            print("Mean Final Error of: " + column + " = " + str(np.nan))
+    #allColumns = dataframe.columns.tolist()
+    #allColumns.remove("P_TYPE")
+    #allColumns.remove("S_TYPE_TEMP")
+    #errorDf = calculateMeanErrorOfFeatures(prenormalizedDf[allColumns], dataframe[allColumns])
+
     dataframe.to_csv("data/finalRes.csv", index=False)
