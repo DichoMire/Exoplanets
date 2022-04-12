@@ -64,6 +64,29 @@ def midIterationProcessing (df = None, scaler = None, columns = None) :
 
     return df
 
+def postAlgorithmProcessing(df = None, scaler = None) :
+    positiveReals = open("data/11-Post Temperature - Errorless - PositiveReals.txt").readlines()
+    positiveReals = list(map(lambda x: x.strip(), positiveReals))
+
+    for column in df.columns.tolist() :
+        min = df[column].min()
+        if column in positiveReals :
+            df[column] = df[column].apply(lambda x: nonZeroToInfinity(x, min=min, up = 0.001, down = 0.0001))  #0.0001
+        elif column in ["P_INCLINATION", "P_OMEGA", "P_IMPACT_PARAMETER" "S_LOG"] :
+            df[column] = df[column].apply(lambda x: nonNegativeDownLimit(x, min=min, up = 0.001, down = 0.0001))
+        
+        max = df[column].max()
+        if column == "P_ECCENTRICITY" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 0.999))
+        elif column == "P_INCLINATION" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 180))
+        elif column == "P_IMPACT_PARAMETER" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.001, down = 0.0001, measure = 1))
+        elif column == "S_AGE" :
+            df[column] = df[column].apply(lambda x: fulfilUpperLimit(x, max=max, up = 0.1, down = 0.001, measure = 13.787))
+
+    return df
+
 #Function that transforms negative data into positive non-zero data
 #X is input, min is the lowest value in the data, up is the most away from 0 a data can be, down is the closest
 #Such that there is a slight weight added
@@ -344,6 +367,7 @@ def inkAlgorithm (dataframe = None) :
 
     print("finished...")
     dataframe = denormalizeDf(dataframe.drop('fullness', axis=1, errors='ignore'), scaler)
+    dataframe = postAlgorithmProcessing(dataframe, scaler)
     dataframe = deDummifyDf(dataframe)
 
     print("Final Errors:")
@@ -397,3 +421,4 @@ if __name__ == '__main__' :
     dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
 
     inkAlgorithm(dataframe)
+
