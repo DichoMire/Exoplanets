@@ -183,31 +183,7 @@ def deDummifyDf ( dataframe = None) :
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
 
-def inkAlgorithm () :
-    return 0
-
-if __name__ == '__main__' :
-    pd.set_option('display.max_columns', None)
-
-    strFile = 'phl_exoplanet_catalog_erroneusless.csv'
-
-    print('Loading file: ' + strFile)
-
-    dataframe = load_csv_to_df("data/" + strFile)
-
-    #Preprocess data
-    dataframe = preprocessing(dataframe)
-
-    #Use file to select columns to work on
-    columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
-
-    dataframe = dataframe[columnList]
-
-    #Normalize data
-    prenormalizedDf = dataframe
-    normalizationTuple = normalizeDf(dataframe)
-    dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
-
+def inkAlgorithm (dataframe = None) :
     #Create a DF for error info collection
     columns = dataframe.columns.tolist()
     resColumns = []
@@ -396,3 +372,28 @@ if __name__ == '__main__' :
     #errorDf = calculateMeanErrorOfFeatures(prenormalizedDf[allColumns], dataframe[allColumns])
 
     dataframe.to_csv("data/finalRes.csv", index=False)
+    return 0
+
+if __name__ == '__main__' :
+    pd.set_option('display.max_columns', None)
+
+    strFile = 'phl_exoplanet_catalog_erroneusless.csv'
+
+    print('Loading file: ' + strFile)
+
+    dataframe = load_csv_to_df("data/" + strFile)
+
+    #Preprocess data
+    dataframe = preprocessing(dataframe)
+
+    #Use file to select columns to work on
+    columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
+
+    dataframe = dataframe[columnList]
+
+    #Normalize data
+    prenormalizedDf = dataframe
+    normalizationTuple = normalizeDf(dataframe)
+    dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+
+    inkAlgorithm(dataframe)
