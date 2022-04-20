@@ -1,11 +1,9 @@
-import re, matplotlib.pyplot as plt, pandas as pd, nltk, csv, numpy as np, statistics, sys
+import pandas as pd, numpy as np, statistics, random
 from os.path import exists
-from typing import final
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
-from torch import norm, positive
 
 #Open a filename and return a Dataframe
 def load_csv_to_df( filename = None ) :  
@@ -172,6 +170,21 @@ def meanErrorMath( list = None ) :
     else :
         return statistics.mean(list)
 
+def expDataMeanCalculation(list1, list2) :
+    results = []
+    for index in range(0, len(list1) - 1) :
+        results.append(abs(list1[index] - list2[index]))
+    return statistics.mean(results)
+
+def expDataTypeErrorCalculation(list1, list2) :
+    results = []
+    for index in range(0, len(list1) - 1) :
+        if list1[index] == list2[index] :
+            results.append(0)
+        else :
+            results.append(1)
+    return statistics.mean(results)
+
 #Return a new feature that evaluates from 0 to 1 the fullness of a row
 def fullnessGeneration ( df = None) :
     df['fullness'] = pd.notna(df).sum(1)
@@ -205,7 +218,7 @@ def deDummifyDf ( dataframe = None) :
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
 
-def inkAlgorithm (dataframe = None, notLastIter = True) :
+def inkAlgorithm (dataframe = None, boolOutput = True) :
     #Create a DF for error info collection
     columns = dataframe.columns.tolist()
     resColumns = []
@@ -270,9 +283,9 @@ def inkAlgorithm (dataframe = None, notLastIter = True) :
 
         #Get a list of columns that contain at least 1 NaN value
         listNulls = stepDataframe.columns[stepDataframe.isnull().any()].tolist()
-        print("Iteration K = " + str(N-K))
+        #print("Iteration K = " + str(N-K))
         #print("List of Null columns:")
-        print("Missing columns count: " + str(len(listNulls)))
+        #print("Missing columns count: " + str(len(listNulls)))
 
         imputationBasisDataframe = stepDataframe.append(fullNDataframe)
 
@@ -366,8 +379,8 @@ def inkAlgorithm (dataframe = None, notLastIter = True) :
 
     print("finished...")
     dataframe = denormalizeDf(dataframe.drop('fullness', axis=1, errors='ignore'), scaler)
-    if notLastIter == True :
-        dataframe = postAlgorithmProcessing(dataframe, scaler)
+    #if notLastIter == True :
+        #dataframe = postAlgorithmProcessing(dataframe, scaler)
     dataframe = deDummifyDf(dataframe)
 
     #print("Final Errors:")
@@ -386,25 +399,25 @@ def inkAlgorithm (dataframe = None, notLastIter = True) :
                 res = float(errorResults[column].iloc[index]) * float(errorResults[column + "_Weight"].iloc[index])
                 sum += res
                 count += errorResults[column + "_Weight"].iloc[index]
-        if count != 0 :
-            print("Mean Final Error of: " + column + " = " + str(sum/count))
-        else :
-            print("Mean Final Error of: " + column + " = " + str(np.nan))
+        #if count != 0 :
+            #print("Mean Final Error of: " + column + " = " + str(sum/count))
+        #else :
+            #print("Mean Final Error of: " + column + " = " + str(np.nan))
     #allColumns = dataframe.columns.tolist()
     #allColumns.remove("P_TYPE")
     #allColumns.remove("S_TYPE_TEMP")
     #errorDf = calculateMeanErrorOfFeatures(prenormalizedDf[allColumns], dataframe[allColumns])
 
-    
-    for i in range(1,100000) :
-        if not exists("data/finalRes" + str(i) + ".csv") :
-            dataframe.to_csv("data/finalRes" + str(i) + ".csv", index=False)
-            break
-
+    if boolOutput == True :
+        for i in range(1,100000) :
+            if not exists("data/finalRes" + str(i) + ".csv") :
+                dataframe.to_csv("data/finalRes" + str(i) + ".csv", index=False)
+                break
     return dataframe
 
 if __name__ == '__main__' :
     pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
 
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
@@ -412,28 +425,43 @@ if __name__ == '__main__' :
 
     dataframe = load_csv_to_df("data/" + strFile)
 
-    print(dataframe.isna().mean().round(4).mean())
-
     #Use file to select columns to work on
     columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
 
-    while(True) :
-        #Preprocess data
-        dataframe = preprocessing(dataframe)
+    #Preprocess data
+    preprocessedDf = dataframe.copy()
+    dataframe = preprocessing(dataframe)
 
-        dataframe = dataframe[columnList]
+    dataframe = dataframe[columnList]
 
-        #Normalize data
-        prenormalizedDf = dataframe
-        normalizationTuple = normalizeDf(dataframe)
-        dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+    #Normalize data
+    prenormalizedDf = dataframe.copy()
+    normalizationTuple = normalizeDf(dataframe)
+    dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
+
+    #Data Expunge error info collection for each column
+    columnList = [x for x in columnList if "TYPE" not in x]
+    for column in columnList :
+        #Create a copy of the original dataframe to work on
+        dfCopy = dataframe.copy()
+        notNulls = dfCopy[dfCopy[column].notnull()]
+        indexes = notNulls.index.tolist()
+
+        #Select a random sample of values to keep.
+        #Currently 90% of values are kept
+        randSample = random.sample(indexes, int(len(indexes)/10)*9)
+
+        #Indexes of data that has been expunged
+        expungedIndexes = [ind for ind in indexes if ind not in randSample]
+
+        #Replace the old data with the slice
+        slice = dfCopy[column].iloc[randSample]
+        dfCopy[column] = slice
+
+        #Predict the data
+        dfCopy = inkAlgorithm(dfCopy, True)
+        fullnessIndex = dfCopy.isna().mean().round(4).mean()
+        #print(fullnessIndex)
         
-        dataframe = inkAlgorithm(dataframe, True)
-        fullnessIndex = dataframe.isna().mean().round(4).mean()
-        print(fullnessIndex)
-        if(fullnessIndex < 0.001) :
-            dataframe = inkAlgorithm(dataframe, False)
-            break
-
-    print(dataframe.isna().mean().round(4).mean())
-
+        tempError = expDataMeanCalculation(dfCopy[column].iloc[expungedIndexes].tolist(), preprocessedDf[column].iloc[expungedIndexes].tolist())
+        print("Expunged error of " + column + " is: " + str(tempError))
