@@ -2,6 +2,7 @@ import pandas as pd, numpy as np, statistics, random, matplotlib.pyplot as plt
 from os.path import exists
 import os
 import argparse
+import warnings
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
@@ -431,15 +432,17 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
 def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
-    cwd = os.getcwd()
-    if cwd == "/mainfs/lyceum/mm3u19/Slurms" :
-        os.chdir('../Exoplanets')
-
     if currAlgo == None :
         currAlgo = "SVMREG"
+    
+    print("Using algorithm: " + currAlgo)
 
     print('Loading file: ' + strFile)
+    cwd = os.getcwd()
 
+    if cwd == "/mainfs/lyceum/mm3u19/Slurms" :
+      os.chdir('../Exoplanets')
+    
     dataframe = load_csv_to_df("data/" + strFile)
 
     #Use file to select columns to work on
@@ -485,6 +488,8 @@ def main(currAlgo = None) :
         print("Expunged error of " + column + " is: " + str(tempError))
         errorDict = {"Column" : column, "Mean_Error" : tempError}
         totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
+        break
+        
     if not exists("data/Totals/" + currAlgo + ".csv") :
         totalExpungeErrors.to_csv("data/Totals/" + currAlgo + ".csv", index=False)
 
@@ -492,7 +497,8 @@ def main(currAlgo = None) :
 if __name__ == '__main__' :
     #pd.set_option('display.max_columns', None)
     #pd.set_option('display.max_rows', None)
-
+    warnings.simplefilter(action='ignore', category=FutureWarning)
+    
     parser = argparse.ArgumentParser(description='Exoplanet Dataset Survey')
     parser.add_argument('--algo', metavar='STRING', required=False,
                         help='the string of the algorithm')
