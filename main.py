@@ -431,8 +431,12 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
 def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
+    cwd = os.getcwd()
+    if cwd == "/mainfs/lyceum/mm3u19/Slurms" :
+        os.chdir('../Exoplanets')
+
     if currAlgo == None :
-        currAlgo = "LNREG"
+        currAlgo = "SVMREG"
 
     print('Loading file: ' + strFile)
 
