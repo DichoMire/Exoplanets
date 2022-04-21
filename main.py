@@ -14,7 +14,6 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.svm import SVR
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
-from torch import rand
 
 #Open a filename and return a Dataframe
 def load_csv_to_df( filename = None ) :  
