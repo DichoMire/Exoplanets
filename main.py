@@ -1,6 +1,7 @@
 import pandas as pd, numpy as np, statistics, random, matplotlib.pyplot as plt
 from os.path import exists
 import os
+import argparse
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
@@ -220,7 +221,7 @@ def deDummifyDf ( dataframe = None) :
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
 
-def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None) :
+def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, currAlgo = None, normalizationTuple = None, prenormalizedDf = None) :
     #Create a DF for error info collection
     columns = dataframe.columns.tolist()
     resColumns = []
@@ -427,13 +428,11 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None) :
         errorResults[["Iteration", "SampleCount", nameOfColumn, nameOfColumn + "_Weight"]].to_csv("data/" + nameOfColumn + "/Iterations_" + currAlgo + ".csv", index=False)
     return dataframe
 
-if __name__ == '__main__' :
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
-
+def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
-    currAlgo = "LNREG"
+    if currAlgo == None :
+        currAlgo = "LNREG"
 
     print('Loading file: ' + strFile)
 
@@ -474,7 +473,7 @@ if __name__ == '__main__' :
         dfCopy[column] = slice
 
         #Predict the data
-        dfCopy = inkAlgorithm(dfCopy, False, column)
+        dfCopy = inkAlgorithm(dfCopy, False, column, currAlgo, normalizationTuple, prenormalizedDf)
         fullnessIndex = dfCopy.isna().mean().round(4).mean()
         #print(fullnessIndex)
         
@@ -485,3 +484,14 @@ if __name__ == '__main__' :
     if not exists("data/Totals/" + currAlgo + ".csv") :
         totalExpungeErrors.to_csv("data/Totals/" + currAlgo + ".csv", index=False)
 
+
+if __name__ == '__main__' :
+    #pd.set_option('display.max_columns', None)
+    #pd.set_option('display.max_rows', None)
+
+    parser = argparse.ArgumentParser(description='Exoplanet Dataset Survey')
+    parser.add_argument('--algo', metavar='STRING', required=False,
+                        help='the string of the algorithm')
+
+    args = parser.parse_args()
+    main(currAlgo=args.algo)
