@@ -1,7 +1,9 @@
-import pandas as pd, numpy as np, statistics, random
+import pandas as pd, numpy as np, statistics, random, matplotlib.pyplot as plt
 from os.path import exists
+import os
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import LinearRegression
+from sklearn.svm import SVR
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
 
@@ -218,7 +220,7 @@ def deDummifyDf ( dataframe = None) :
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
 
-def inkAlgorithm (dataframe = None, boolOutput = True) :
+def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None) :
     #Create a DF for error info collection
     columns = dataframe.columns.tolist()
     resColumns = []
@@ -226,7 +228,7 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
         resColumns.append(column)
         resColumns.append(column + "_Weight")
     resColumns.insert(0, "Iteration")
-    resColumns.insert(1, "Sample Count")
+    resColumns.insert(1, "SampleCount")
     errorResults = pd.DataFrame(columns=resColumns)
 
     N = len(dataframe.columns.tolist())
@@ -236,8 +238,16 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
 
     #Begining of N-step process
     while True :
+        #algorithm = "SVMREG"
         #Tool initialization
         lnreg = LinearRegression()
+        svmreg = SVR(kernel="linear")
+
+        if currAlgo == "LNREG" :
+            algorithm = lnreg
+        elif currAlgo == "SVMREG" :
+            algorithm = svmreg
+
         imputer = KNNImputer(n_neighbors=2)
 
         #Contains all the rows that are fully filled in
@@ -309,7 +319,8 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
 
 
             #Fit data and predict the values of the null column
-            reg = lnreg.fit(fullNDataframe.drop(nullColumn, axis = 1, inplace = False),fullNDataframe[nullColumn])
+            #reg = lnreg.fit(fullNDataframe.drop(nullColumn, axis = 1, inplace = False),fullNDataframe[nullColumn])
+            reg = algorithm.fit(fullNDataframe.drop(nullColumn, axis = 1, inplace = False),fullNDataframe[nullColumn])
             predictedArr = reg.predict(tempStepDataframe)
             predictedDataframe[nullColumn] = predictedArr
 
@@ -320,7 +331,6 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
         tempStepDataframe[predictedDataframe.columns.tolist()] = predictedDataframe
         
         #Dataframe to stitch old and new values together
-        nanBoolDataframe = stepDataframe.isna()
         finalDataframe = stepDataframe
         #==End
 
@@ -340,13 +350,11 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
 
         #Append error data to ErrorResult Df
         sampleCount = len(errorDf.index)
-        inputDict = {"Iteration" : K, "Sample Count" : sampleCount}
+        inputDict = {"Iteration" : K, "SampleCount" : sampleCount}
 
         #Output information
         columns = errorDf.columns.tolist()
         for column in columns :
-            if K == 43 and column == "P_MASS" :
-                stop = True
             res = str(meanErrorMath(errorDf[column]))
             if (res is not np.nan) and (res != "nan")  :
                 inputDict[column] = res
@@ -387,7 +395,7 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
     weightColumns = [col for col in errorResults.columns if '_Weight' in col]
     columns = [x for x in errorResults.columns.tolist() if x not in weightColumns]
     columns.remove("Iteration")
-    columns.remove("Sample Count")
+    columns.remove("SampleCount")
 
     #print(errorResults)
 
@@ -413,6 +421,10 @@ def inkAlgorithm (dataframe = None, boolOutput = True) :
             if not exists("data/finalRes" + str(i) + ".csv") :
                 dataframe.to_csv("data/finalRes" + str(i) + ".csv", index=False)
                 break
+    if not exists("data/" + nameOfColumn + "/Iterations_" + currAlgo + ".csv") :
+        if not exists("data/" + nameOfColumn) :
+            os.mkdir("data/" + nameOfColumn)
+        errorResults[["Iteration", "SampleCount", nameOfColumn, nameOfColumn + "_Weight"]].to_csv("data/" + nameOfColumn + "/Iterations_" + currAlgo + ".csv", index=False)
     return dataframe
 
 if __name__ == '__main__' :
@@ -420,6 +432,8 @@ if __name__ == '__main__' :
     pd.set_option('display.max_rows', None)
 
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
+
+    currAlgo = "LNREG"
 
     print('Loading file: ' + strFile)
 
@@ -440,6 +454,7 @@ if __name__ == '__main__' :
     dataframe = pd.DataFrame(normalizationTuple[0], columns=prenormalizedDf.columns.tolist())
 
     #Data Expunge error info collection for each column
+    totalExpungeErrors = pd.DataFrame(columns = ["Column", "Mean_Error"])
     columnList = [x for x in columnList if "TYPE" not in x]
     for column in columnList :
         #Create a copy of the original dataframe to work on
@@ -459,9 +474,14 @@ if __name__ == '__main__' :
         dfCopy[column] = slice
 
         #Predict the data
-        dfCopy = inkAlgorithm(dfCopy, True)
+        dfCopy = inkAlgorithm(dfCopy, False, column)
         fullnessIndex = dfCopy.isna().mean().round(4).mean()
         #print(fullnessIndex)
         
         tempError = expDataMeanCalculation(dfCopy[column].iloc[expungedIndexes].tolist(), preprocessedDf[column].iloc[expungedIndexes].tolist())
         print("Expunged error of " + column + " is: " + str(tempError))
+        errorDict = {"Column" : column, "Mean_Error" : tempError}
+        totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
+    if not exists("data/Totals/" + currAlgo + ".csv") :
+        totalExpungeErrors.to_csv("data/Totals/" + currAlgo + ".csv", index=False)
+
