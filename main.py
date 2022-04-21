@@ -3,11 +3,18 @@ from os.path import exists
 import os
 import argparse
 import warnings
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.impute import KNNImputer
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.neural_network import MLPRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.svm import SVR
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import confusion_matrix, f1_score, classification_report
+from torch import rand
 
 #Open a filename and return a Dataframe
 def load_csv_to_df( filename = None ) :  
@@ -240,15 +247,31 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
 
     #Begining of N-step process
     while True :
-        #algorithm = "SVMREG"
-        #Tool initialization
-        lnreg = LinearRegression()
-        svmreg = SVR(kernel="linear")
 
         if currAlgo == "LNREG" :
-            algorithm = lnreg
-        elif currAlgo == "SVMREG" :
-            algorithm = svmreg
+            algorithm = LinearRegression()
+        elif currAlgo == "SVMLNREG" :
+            algorithm = SVR(kernel="linear")
+        elif currAlgo == "SVMPOLREG" :
+            algorithm = SVR(kernel="poly")
+        elif currAlgo == "SVMRBFREG" :
+            algorithm = SVR(kernel="rbf")
+        elif currAlgo == "RIDGEREG" :
+            algorithm = Ridge()
+        elif currAlgo == "LASSOREG" :
+            algorithm = Lasso()
+        elif currAlgo == "MLPADAMREG" :
+            algorithm = MLPRegressor(solver="adam")
+        elif currAlgo == "MLPLBREG" :
+            algorithm = MLPRegressor(solver="lbfgs")
+        elif currAlgo == "DECTREG" :
+            algorithm = DecisionTreeRegressor()
+        elif currAlgo == "RANDFREG" :
+            algorithm = RandomForestRegressor()
+        elif currAlgo == "KNEIREG" :
+            algorithm = KNeighborsRegressor()
+
+        
 
         imputer = KNNImputer(n_neighbors=2)
 
@@ -433,7 +456,19 @@ def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
     if currAlgo == None :
-        currAlgo = "SVMREG"
+        currAlgo = "GAUSREG"
+
+        """lnreg = LinearRegression()
+        svmlnreg = SVR(kernel="linear")
+        svmpolreg = SVR(kernel="poly")
+        svmrbfreg = SVR(kernel="rbf")
+        ridgereg = Ridge()
+        lassoreg = Lasso()
+        mlpreg = MLPRegressor(solver="lbfgs") (SLOWISH)
+        dectreg = DecisionTreeRegressor()
+        randfreg = RandomForestRegressor() (SLOWISH)
+        kneireg = KNeighborsRegressor()  (Quite quick)
+        gausreg = GaussianProcessRegressor()   (SLOWISH)"""  
     
     print("Using algorithm: " + currAlgo)
 
@@ -498,6 +533,7 @@ if __name__ == '__main__' :
     #pd.set_option('display.max_columns', None)
     #pd.set_option('display.max_rows', None)
     warnings.simplefilter(action='ignore', category=FutureWarning)
+    warnings.simplefilter(action='ignore', category=ConvergenceWarning)
     
     parser = argparse.ArgumentParser(description='Exoplanet Dataset Survey')
     parser.add_argument('--algo', metavar='STRING', required=False,
