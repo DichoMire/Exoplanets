@@ -455,7 +455,7 @@ def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
     if currAlgo == None :
-        currAlgo = "GAUSREG"
+        currAlgo = None
 
         """lnreg = LinearRegression()
         svmlnreg = SVR(kernel="linear")
@@ -522,7 +522,6 @@ def main(currAlgo = None) :
         print("Expunged error of " + column + " is: " + str(tempError))
         errorDict = {"Column" : column, "Mean_Error" : tempError}
         totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
-        break
         
     if not exists("data/Totals/" + currAlgo + ".csv") :
         totalExpungeErrors.to_csv("data/Totals/" + currAlgo + ".csv", index=False)
