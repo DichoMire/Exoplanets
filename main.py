@@ -460,6 +460,7 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
             if not exists("data/" + nameOfColumn) :
                 os.mkdir("data/" + nameOfColumn)
             errorResults[["Iteration", "SampleCount", nameOfColumn, nameOfColumn + "_Weight"]].to_csv("data/" + nameOfColumn + "/Iterations_" + currAlgo + str(i) + ".csv", index=False)
+            break
     return dataframe
 
 def main(currAlgo = None) :
@@ -538,10 +539,12 @@ def main(currAlgo = None) :
         print("Expunged error of " + column + " is: " + str(tempError))
         errorDict = {"Column" : column, "Mean_Error" : tempError}
         totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
+        break
     
     for i in range(1,100000) :
         if not exists("data/Totals/" + currAlgo + str(i) + ".csv") :
             totalExpungeErrors.to_csv("data/Totals/" + currAlgo + str(i) + ".csv", index=False)
+            break
 
 
 if __name__ == '__main__' :
