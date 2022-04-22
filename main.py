@@ -142,15 +142,16 @@ def fulfilUpperLimit ( x, max, up, down, measure) :
         return x
 
 #Return a list of all features
-def selectColumnsFromFile( filename = None) :
+def selectColumnsFromFile( filename = None, preprocessed = True) :
     fileR = open("data/" + filename + ".txt", 'r')
     lines = fileR.readlines()
     columns = list(map(lambda x: x.strip(), lines))
     columns.remove("P_TYPE")
     columns.remove("S_TYPE_TEMP")
     columnsPTypes = ["P_TYPE_Terran", "P_TYPE_Neptunian", "P_TYPE_Jovian", "P_TYPE_Superterran", "P_TYPE_Subterran", "P_TYPE_Miniterran"]
-    columnsSTypes = ["S_TYPE_TEMP_O", "S_TYPE_TEMP_M", "S_TYPE_TEMP_A", "S_TYPE_TEMP_K", "S_TYPE_TEMP_F", "S_TYPE_TEMP_B", "S_TYPE_TEMP_G"]
-    columns = columns + columnsPTypes + columnsSTypes
+    columnsSTypes = ["S_TYPE_TEMP_M", "S_TYPE_TEMP_A", "S_TYPE_TEMP_K", "S_TYPE_TEMP_F", "S_TYPE_TEMP_G"]
+    if preprocessed == True :
+        columns = columns + columnsPTypes + columnsSTypes
     return columns
 
 #Function that calculates mean error between two Dataframes
@@ -227,6 +228,15 @@ def deDummifyDf ( dataframe = None) :
 
     #df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     #df = pd.get_dummies(df, columns=["S_TYPE_T EMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
+
+def expungeN(dataframe = None, expungeList = None) :
+    numExpunged = 10
+    for column in expungeList :
+        dataframe = dataframe.sort_values(ascending=False, by=column)
+        dataframe = dataframe.iloc[numExpunged:]
+
+    dataframe = dataframe.sort_index()
+    return dataframe
 
 def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, currAlgo = None, normalizationTuple = None, prenormalizedDf = None) :
     #Create a DF for error info collection
@@ -366,8 +376,8 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
 
         #Mid-processing to remove any erroneus information
         #Function Denormalizes the predictedDataframe     !@!!!!!!!!!!!!! removed
-        #predictedDataframe = midIterationProcessing(tempStepDataframe, scaler, columns)
-        #predictedDataframe = predictedDataframe[columns]
+        predictedDataframe = denormalizeDf(tempStepDataframe, scaler)
+        predictedDataframe = predictedDataframe[listNulls]
 
         #Calculate error
         errorDf = calculateMeanErrorOfFeatures(stepDataframe[listNulls], predictedDataframe)
@@ -445,17 +455,18 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
             if not exists("data/finalRes" + str(i) + ".csv") :
                 dataframe.to_csv("data/finalRes" + str(i) + ".csv", index=False)
                 break
-    if not exists("data/" + nameOfColumn + "/Iterations_" + currAlgo + ".csv") :
-        if not exists("data/" + nameOfColumn) :
-            os.mkdir("data/" + nameOfColumn)
-        errorResults[["Iteration", "SampleCount", nameOfColumn, nameOfColumn + "_Weight"]].to_csv("data/" + nameOfColumn + "/Iterations_" + currAlgo + ".csv", index=False)
+    for i in range(1, 100000) :
+        if not exists("data/" + nameOfColumn + "/Iterations_" + currAlgo + str(i) +".csv") :
+            if not exists("data/" + nameOfColumn) :
+                os.mkdir("data/" + nameOfColumn)
+            errorResults[["Iteration", "SampleCount", nameOfColumn, nameOfColumn + "_Weight"]].to_csv("data/" + nameOfColumn + "/Iterations_" + currAlgo + str(i) + ".csv", index=False)
     return dataframe
 
 def main(currAlgo = None) :
     strFile = 'phl_exoplanet_catalog_erroneusless.csv'
 
     if currAlgo == None :
-        currAlgo = None
+        currAlgo = "LNREG"
 
         """lnreg = LinearRegression()
         svmlnreg = SVR(kernel="linear")
@@ -469,7 +480,8 @@ def main(currAlgo = None) :
         kneireg = KNeighborsRegressor()  (Quite quick)
         gausreg = GaussianProcessRegressor()   (SLOWISH)"""  
     
-    print("Using algorithm: " + currAlgo)
+    if currAlgo is not None :
+        print("Using algorithm: " + currAlgo)
 
     print('Loading file: ' + strFile)
     cwd = os.getcwd()
@@ -481,6 +493,10 @@ def main(currAlgo = None) :
 
     #Use file to select columns to work on
     columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
+    expungeList = selectColumnsFromFile("11-Post Temperature - Errorless", False)
+
+    #Test Expunge
+    dataframe = expungeN(dataframe, expungeList)
 
     #Preprocess data
     preprocessedDf = dataframe.copy()
@@ -522,9 +538,10 @@ def main(currAlgo = None) :
         print("Expunged error of " + column + " is: " + str(tempError))
         errorDict = {"Column" : column, "Mean_Error" : tempError}
         totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
-        
-    if not exists("data/Totals/" + currAlgo + ".csv") :
-        totalExpungeErrors.to_csv("data/Totals/" + currAlgo + ".csv", index=False)
+    
+    for i in range(1,100000) :
+        if not exists("data/Totals/" + currAlgo + str(i) + ".csv") :
+            totalExpungeErrors.to_csv("data/Totals/" + currAlgo + str(i) + ".csv", index=False)
 
 
 if __name__ == '__main__' :
