@@ -539,7 +539,6 @@ def main(currAlgo = None) :
         print("Expunged error of " + column + " is: " + str(tempError))
         errorDict = {"Column" : column, "Mean_Error" : tempError}
         totalExpungeErrors = totalExpungeErrors.append(errorDict, ignore_index=True)
-        break
     
     for i in range(1,100000) :
         if not exists("data/Totals/" + currAlgo + str(i) + ".csv") :
