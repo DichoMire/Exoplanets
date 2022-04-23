@@ -19,9 +19,7 @@ from sklearn.metrics import confusion_matrix, f1_score, classification_report
 def load_csv_to_df( filename = None ) :  
     return pd.read_csv(filename)
 
-def preprocessing( df = None) :
-    #TO DO:
-    #Zeros - NaN
+def vectorizeDf( df = None) :
     df = pd.get_dummies(df, columns=["P_TYPE"], prefix="P_TYPE", prefix_sep="_")
     df = pd.get_dummies(df, columns=["S_TYPE_TEMP"], prefix="S_TYPE_TEMP", prefix_sep="_")
     return df
@@ -501,7 +499,7 @@ def main(currAlgo = None) :
 
     #Preprocess data
     preprocessedDf = dataframe.copy()
-    dataframe = preprocessing(dataframe)
+    dataframe = vectorizeDf(dataframe)
 
     dataframe = dataframe[columnList]
 
