@@ -25,7 +25,7 @@ def main(currAlgo = None, currCol = None, currFileC = None) :
     if currAlgo == None :
         currAlgo = "LNREG"
     if currCol == None :
-        currCol = "P_MASS"
+        currCol = "S_AGE"
     if currFileC == None :
         currFileC = 1
     
