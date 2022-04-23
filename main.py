@@ -259,8 +259,8 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
 
         if currAlgo == "LNREG" :
             algorithm = LinearRegression()
-        elif currAlgo == "SVMLNREG" :
-            algorithm = SVR(kernel="linear")
+        #elif currAlgo == "SVMLNREG" :
+            #algorithm = SVR(kernel="linear")
         elif currAlgo == "SVMPOLREG" :
             algorithm = SVR(kernel="poly")
         elif currAlgo == "SVMRBFREG" :
@@ -275,8 +275,8 @@ def inkAlgorithm (dataframe = None, boolOutput = True, nameOfColumn = None, curr
             algorithm = MLPRegressor(solver="lbfgs")
         elif currAlgo == "DECTREG" :
             algorithm = DecisionTreeRegressor()
-        elif currAlgo == "RANDFREG" :
-            algorithm = RandomForestRegressor()
+        #elif currAlgo == "RANDFREG" :
+            #algorithm = RandomForestRegressor()
         elif currAlgo == "KNEIREG" :
             algorithm = KNeighborsRegressor()
 
