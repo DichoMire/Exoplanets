@@ -31,4 +31,6 @@ if __name__ == '__main__' :
         
         for ind, row in dataframe.iterrows() :
             cmd = "python GraphTool.py --algo=" + row["Algorithm"] + " --column=" + row["Column"] + " --fc=" +  str(row["FileCount"])
-            print(cmd)
+            p = subprocess.Popen(cmd, shell=True)
+            out, err = p.communicate()
+            print(out)
