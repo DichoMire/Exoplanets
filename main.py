@@ -490,9 +490,15 @@ def main(currAlgo = None) :
     
     dataframe = load_csv_to_df("data/" + strFile)
 
+    #print(dataframe.describe())
+
     #Use file to select columns to work on
     columnList = selectColumnsFromFile("11-Post Temperature - Errorless")
     expungeList = selectColumnsFromFile("11-Post Temperature - Errorless", False)
+
+    print(expungeList)
+
+    return
 
     #Test Expunge
     dataframe = expungeN(dataframe, expungeList)
@@ -545,7 +551,7 @@ def main(currAlgo = None) :
 
 
 if __name__ == '__main__' :
-    #pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_columns', None)
     #pd.set_option('display.max_rows', None)
     warnings.simplefilter(action='ignore', category=FutureWarning)
     warnings.simplefilter(action='ignore', category=ConvergenceWarning)

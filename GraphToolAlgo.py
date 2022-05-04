@@ -23,7 +23,7 @@ def selectColumnsFromFile( filename = None) :
 
 if __name__ == '__main__' :
     columnGroupBasic = ["P_MASS", "P_DISTANCE","P_ECCENTRICITY", "P_OMEGA","S_AGE", "S_LOG_G", "S_RADIUS"]
-    algorithms = ["SVMPOLREG", "SVMRBFREG", "RIDGEREG", "LASSOREG", "MLPADAMREG", "MLPLBREG", "DECTREG"]
+    algorithms = ["MLPADAMREG", "MLPLBREG", "DECTREG"]
     algorithmsInf = ["SVMPOLREG", "SVMRBFREG", "RIDGEREG", "LASSOREG", "MLPADAMREG", "MLPLBREG", "DECTREG", "LNREG"]
     #algorithms = algorithmsInf
 
@@ -62,8 +62,8 @@ if __name__ == '__main__' :
         plt.title("Algorithm Comparison")
         plt.legend()
         plt.grid(True,which="both", linestyle='--')
-        plt.yscale("log")
-        fig.savefig("Images/_Groups/" + str(ind + 1) + ".jpg", bbox_inches='tight', dpi=150)
+        #plt.yscale("log")
+        fig.savefig("Images/_Groups/" + str(ind + 1) + "Lin(MLP).jpg", bbox_inches='tight', dpi=150)
 
 
 
